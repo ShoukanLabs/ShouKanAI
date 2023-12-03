@@ -1,10 +1,10 @@
-from ..t2m.options import option_transformer as option_trans
+from ..T2M.options import option_transformer as option_trans
 import clip
 import torch
-from ..t2m.models import vqvae as vqvae
-from ..t2m.models import t2m_trans as trans
+from ..T2M.models import vqvae as vqvae
+from ..T2M.models import t2m_trans as trans
 
-from t2m.utils.motion_process import recover_from_ric
+from T2M.utils.motion_process import recover_from_ric
 
 import warnings
 import numpy as np
