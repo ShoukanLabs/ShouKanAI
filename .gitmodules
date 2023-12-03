@@ -1,0 +1,3 @@
+[submodule "T2M-GPT"]
+	path = T2M-GPT
+	url = https://github.com/korakoe/T2M-GPT.git
