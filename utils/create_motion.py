@@ -78,6 +78,11 @@ def infer_motion(text="a person is jumping",
     pred_xyz = recover_from_ric((pred_pose * std + mean).float(), 22)
     xyz = pred_xyz.reshape(1, -1, 22, 3)
     xyz = xyz[0]
+
+    del clip_preprocess, clip_model, net, ckpt, trans_encoder, mean, std
+
+    torch.cuda.empty_cache()
+
     return xyz
 
 
