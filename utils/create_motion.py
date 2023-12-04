@@ -124,11 +124,13 @@ class MotionManager:
                                                                       [0, 3, 6, 9, 12, 15], [9, 14, 17, 19, 21],
                                                                       [9, 13, 16, 18, 20]]
         mins = data.min(axis=0).min(axis=0)
+        maxs = data.max(axis=0).max(axis=0)
 
         parts = ["RightLeg", "LeftLeg", "Spine", "RightArm", "LeftArm"]
 
         height_offset = mins[1]
         data[:, :, 1] -= height_offset
+        trajec = data[:, 0, [0, 2]]
 
         data[..., 0] -= data[:, 0:1, 0]
         data[..., 2] -= data[:, 0:1, 2]
@@ -137,6 +139,16 @@ class MotionManager:
         markers = []
 
         for index in tqdm(range(framesTotal)):
+
+            minx = mins[0] - trajec[index, 0]
+            maxx = maxs[0] - trajec[index, 0]
+            minz = mins[2] - trajec[index, 1]
+            maxz = maxs[2] - trajec[index, 1]
+
+            x = (minx + minx + maxx + maxx) / 4
+            y = (0 + 0 + 0 + 0) / 4
+            z = (minz + maxz + maxz + minz) / 4
+
             frames.append([])
             for i, chain in enumerate(smpl_kinetic_chain):
                 for idx, point in enumerate(data[index, chain]):
@@ -147,6 +159,13 @@ class MotionManager:
                                                }}
                     frames[index].append(frameDict)
 
+            global_offset = {f"global": {"x": x,
+                                     "y": y,
+                                     "z": z,
+                                     "Named": "Global Offset",
+                                     }}
+            frames[index].append(global_offset)
+
         for idx, frame in tqdm(enumerate(frames)):
             markers.append([])
 
@@ -154,17 +173,17 @@ class MotionManager:
                 for i in frame:
                     if list(i.keys())[0] == name:
                         if xyz:
-                            return {"x": i[name]["x"],
-                                    "y": i[name]["y"],
-                                    "z": i[name]["z"]}
+                            return {"x": i[name]["x"] - frame[-1]["global"]["x"],
+                                    "y": i[name]["y"] - frame[-1]["global"]["y"],
+                                    "z": i[name]["z"] - frame[-1]["global"]["z"]}
                         elif listType:
-                            return [i[name]["x"],
-                                    i[name]["y"],
-                                    i[name]["z"]]
+                            return [i[name]["x"] - frame[-1]["global"]["x"],
+                                    i[name]["y"] - frame[-1]["global"]["y"],
+                                    i[name]["z"] - frame[-1]["global"]["z"]]
                         else:
-                            return np.array([i[name]["x"],
-                                             i[name]["y"],
-                                             i[name]["z"]])
+                            return np.array([i[name]["x"] - frame[-1]["global"]["x"],
+                                             i[name]["y"] - frame[-1]["global"]["y"],
+                                             i[name]["z"] - frame[-1]["global"]["z"]])
 
             def _only_loc(name):
                 return {"location": _get_np_loc(name, xyz=True),
@@ -324,7 +343,7 @@ class MotionManager:
 
             marker_dict = {
                 "head": {"location": hh,
-                         "rotation": {"x": -rxc, "y": ryc, "z": rzhh}},
+                         "rotation": {"x": -rxc, "y": ryc, "z": rzhh + 30}},
                 "chest": {"location": c,
                           "rotation": {"x": -rxc - 90, "y": ryc, "z": rzc}},
                 "hip": {"location": h,
