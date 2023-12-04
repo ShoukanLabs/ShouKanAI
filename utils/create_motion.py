@@ -160,10 +160,10 @@ class MotionManager:
                     frames[index].append(frameDict)
 
             global_offset = {f"global": {"x": x,
-                                     "y": y,
-                                     "z": z,
-                                     "Named": "Global Offset",
-                                     }}
+                                         "y": y,
+                                         "z": z,
+                                         "Named": "Global Offset",
+                                         }}
             frames[index].append(global_offset)
 
         for idx, frame in tqdm(enumerate(frames)):
@@ -188,13 +188,12 @@ class MotionManager:
             def _only_loc(name, rotation=None):
                 if rotation is None:
                     return {"location": _get_np_loc(name, xyz=True),
-                        "rotation": {"x": 0, "y": 0, "z": 0}}
+                            "rotation": {"x": 0, "y": 0, "z": 0}}
                 else:
-                   x, y, z = list(rotation)
+                    rx, ry, rz = list(rotation)
 
-                   return {"location": _get_np_loc(name, xyz=True),
-                        "rotation": {"x": x, "y": y, "z": z}}
-
+                    return {"location": _get_np_loc(name, xyz=True),
+                            "rotation": {"x": rx, "y": ry, "z": rz}}
 
             hip_left = "11"
             hip_right = "01"
