@@ -93,6 +93,7 @@ class MotionManager:
 
     @staticmethod
     def retrieve_marker_locations(joints):
+        print(f"[STARTING] ")
         data = joints.copy().reshape(len(joints), -1, 3)
 
         nb_joints = joints.shape[1]
@@ -125,9 +126,17 @@ class MotionManager:
         print("[READY] Motion returned as locations")
         return {"frames": frames}
 
+    def retrieve_marker_locations_from_saved(self, path):
+        print(f"[LOADING] Loading {path}")
+        joints = np.load(path)
+        print(f"[STARTING] Beginning conversion of {path}")
+        return self.retrieve_marker_locations(joints)
+
 
 # Example Usage
 if __name__ == "__main__":
     manager = MotionManager("path to pth", "path to trans", "path to mean", "path to std")
-    xyzloc = manager.infer_motion("a person is jumping")
-    finalframes = manager.retrieve_marker_locations(xyzloc)
+    # xyzloc = manager.infer_motion("a person is jumping")
+    # finalframes = manager.retrieve_marker_locations(xyzloc)
+
+    frames = manager.retrieve_marker_locations_from_saved(r"D:\Github\ShouKanAI\Save For Later\motion.npy")
