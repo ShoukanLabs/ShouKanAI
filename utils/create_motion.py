@@ -5,12 +5,19 @@ import torch
 from T2M.models import vqvae as vqvae
 from T2M.models import t2m_trans as trans
 
+from ursina import *
+from ursina.shaders import *
 from T2M.utils.motion_process import recover_from_ric
 
 import warnings
 import numpy as np
 
 from scipy.spatial.transform import Rotation as R
+
+# create a window
+window.borderless = False
+window.title = 'Motion Debug'
+visualizer = Ursina(vsync=True, use_ingame_console=False)
 
 
 class MotionManager:
@@ -139,7 +146,9 @@ class MotionManager:
                     frames[index].append(frameDict)
                     print(f"[{index} - POINT {parts[i]}-{idx}] - loc({point[0]}, {point[1]}, {point[2]})")
 
-        for frame in frames:
+        for idx, frame in enumerate(frames):
+            markers.append([])
+
             def _get_np_loc(name, listType=False, xyz=False):
                 for i in frame:
                     if list(i.keys())[0] == name:
@@ -228,17 +237,17 @@ class MotionManager:
 
             marker_dict = {
                 "hip": {"location": h,
-                        "rotation": {"x": rxh, "y": ryh, "z": rzh}},
+                        "rotation": {"x": rxh + 90, "y": ryh, "z": rzh}},
                 "leg_l": {"location": kl,
-                          "rotation": {"x": rxkl, "y": rykl, "z": rzkl}},
+                          "rotation": {"x": rxkl - 90, "y": rykl, "z": rzkl}},
                 "leg_r": {"location": kr,
-                          "rotation": {"x": rxkr, "y": rykr, "z": rzkr}},
+                          "rotation": {"x": rxkr - 90, "y": rykr, "z": rzkr }},
                 "foot_l": _only_loc("14"),
                 "foot_r": _only_loc("04")
             }
 
             print(f"[{index} - MARKERS ADDED] \n{marker_dict}\n\n")
-            markers.append(marker_dict)
+            markers[idx].append(marker_dict)
 
         print("[READY] Motion returned as locations and emulated trackers")
         return {"frames": frames, "markers": markers}
@@ -274,3 +283,103 @@ if __name__ == "__main__":
 
     with open('data.json', 'w', encoding='utf-8') as f:
         json.dump(frames, f, indent=4, cls=NpEncoder)
+
+    # Visualiser
+    # HTC Vive Tracker by Marco Romero
+    # [CC-BY] (https://creativecommons.org/licenses/by/3.0/)
+    # via Poly Pizza (https://poly.pizza/m/3g9sc265XVC)
+
+    scale = 0.001
+
+    tracker_model = "./resources/HTC_Vive_Tracker.obj"
+
+    hip = Entity(model=tracker_model,
+                 color=color.dark_gray,
+                 scale=(scale, scale, scale),
+                 shader=basic_lighting_shader)
+
+    legl = Entity(model=tracker_model,
+                  color=color.dark_gray,
+                  scale=(scale, scale, scale),
+                  shader=basic_lighting_shader)
+
+    legr = Entity(model=tracker_model,
+                  color=color.dark_gray,
+                  scale=(scale, scale, scale),
+                  shader=basic_lighting_shader)
+
+    footl = Entity(model=tracker_model,
+                   color=color.dark_gray,
+                   scale=(scale, scale, scale),
+                   shader=basic_lighting_shader)
+
+    footr = Entity(model=tracker_model,
+                   color=color.dark_gray,
+                   scale=(scale, scale, scale),
+                   shader=basic_lighting_shader)
+
+    hip.double_sided = True
+    legl.double_sided = True
+    legr.double_sided = True
+    footl.double_sided = True
+    footr.double_sided = True
+
+    frameidx = 0
+
+    text_entity = Text("Frame: 0", world_scale=30, origin=(4.5, -11))
+
+
+    def update():
+        global frameidx
+        frameidx += 1 * time.dt * 25
+        if frameidx > len(frames["markers"]) - 1:
+            frameidx = 0
+
+        frameidxdelta = int(frameidx)
+
+        text_entity.text = f"Frame: {frameidxdelta}"
+
+        frame = frames["markers"][frameidxdelta]
+        frame = frame[0]
+
+        hip.position = Vec3(frame["hip"]["location"]["x"],
+                            frame["hip"]["location"]["y"],
+                            frame["hip"]["location"]["z"])
+
+        legl.position = Vec3(frame["leg_l"]["location"]["x"],
+                             frame["leg_l"]["location"]["y"],
+                             frame["leg_l"]["location"]["z"])
+        legr.position = Vec3(frame["leg_r"]["location"]["x"],
+                             frame["leg_r"]["location"]["y"],
+                             frame["leg_r"]["location"]["z"])
+        footl.position = Vec3(frame["foot_l"]["location"]["x"],
+                              frame["foot_l"]["location"]["y"],
+                              frame["foot_l"]["location"]["z"])
+        footr.position = Vec3(frame["foot_r"]["location"]["x"],
+                              frame["foot_r"]["location"]["y"],
+                              frame["foot_r"]["location"]["z"])
+
+        hip.rotation = Vec3(frame["hip"]["rotation"]["x"],
+                            frame["hip"]["rotation"]["y"],
+                            frame["hip"]["rotation"]["z"])
+        legl.rotation = Vec3(-frame["leg_l"]["rotation"]["x"],
+                             -frame["leg_l"]["rotation"]["y"],
+                             -frame["leg_l"]["rotation"]["z"])
+        legr.rotation = Vec3(-frame["leg_r"]["rotation"]["x"],
+                             -frame["leg_r"]["rotation"]["y"],
+                             -frame["leg_r"]["rotation"]["z"])
+        footl.rotation = Vec3(frame["foot_l"]["rotation"]["x"],
+                              frame["foot_l"]["rotation"]["y"],
+                              frame["foot_l"]["rotation"]["z"])
+        footr.rotation = Vec3(frame["foot_r"]["rotation"]["x"],
+                              frame["foot_r"]["rotation"]["y"],
+                              frame["foot_r"]["rotation"]["z"])
+
+
+    ec = EditorCamera(ignore_scroll_on_ui=True)
+    front = Entity(model="cube", scale=(3, 3, 0.01), shader=basic_lighting_shader, rotation_x=90)
+
+    pivot = Entity()
+    DirectionalLight(parent=pivot, y=5, z=3, shadows=True)
+
+    visualizer.run()
