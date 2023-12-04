@@ -12,6 +12,8 @@ from T2M.utils.motion_process import recover_from_ric
 import warnings
 import numpy as np
 
+from tqdm import tqdm
+
 from scipy.spatial.transform import Rotation as R
 
 # create a window
@@ -134,7 +136,7 @@ class MotionManager:
         frames = []
         markers = []
 
-        for index in range(framesTotal):
+        for index in tqdm(range(framesTotal)):
             frames.append([])
             for i, chain in enumerate(smpl_kinetic_chain):
                 for idx, point in enumerate(data[index, chain]):
@@ -144,9 +146,8 @@ class MotionManager:
                                                "Named": f"{parts[i]}-{idx}",
                                                }}
                     frames[index].append(frameDict)
-                    print(f"[{index} - POINT {parts[i]}-{idx}] - loc({point[0]}, {point[1]}, {point[2]})")
 
-        for idx, frame in enumerate(frames):
+        for idx, frame in tqdm(enumerate(frames)):
             markers.append([])
 
             def _get_np_loc(name, listType=False, xyz=False):
@@ -173,11 +174,42 @@ class MotionManager:
             hip_right = "01"
             hip_up = "20"
 
+            chest_left = "41"
+            chest_right = "31"
+            chest_down = "22"
+
             knee_left = "12"
             knee_right = "02"
 
             ankle_left = "13"
             ankle_right = "03"
+
+            foot_right = "04"
+            foot_left = "14"
+
+            elbow_right = "33"
+            elbow_left = "43"
+
+            hand_right = "34"
+            hand_left = "44"
+
+            head_top = "25"
+            neck = "24"
+
+            # head
+            y = _get_np_loc(head_top) - _get_np_loc(neck)
+            w = _get_np_loc(neck) - _get_np_loc(head_top)
+            z = np.cross(w, y)
+            if np.sqrt(sum(z ** 2)) < 1e-6:
+                w = _get_np_loc(chest_left) - _get_np_loc(neck)
+                z = np.cross(w, y)
+            x = np.cross(y, z)
+
+            x = x / np.sqrt(sum(x ** 2))
+            y = y / np.sqrt(sum(y ** 2))
+            z = z / np.sqrt(sum(z ** 2))
+
+            head_rot = np.vstack((x, y, z)).T
 
             # hip
             x = _get_np_loc(hip_right) - _get_np_loc(hip_left)
@@ -191,10 +223,21 @@ class MotionManager:
 
             hip_rot = np.vstack((x, y, z)).T
 
-            # right leg
+            # chest
+            x = _get_np_loc(chest_right) - _get_np_loc(chest_left)
+            w = _get_np_loc(chest_down) - _get_np_loc(chest_left)
+            z = np.cross(x, w)
+            y = np.cross(z, x)
 
+            x = x / np.sqrt(sum(x ** 2))
+            y = y / np.sqrt(sum(y ** 2))
+            z = z / np.sqrt(sum(z ** 2))
+
+            chest_rot = np.vstack((x, y, z)).T
+
+            # right leg
             y = _get_np_loc(knee_right) - _get_np_loc(ankle_right)
-            w = _get_np_loc(hip_right) - _get_np_loc(ankle_right)
+            w = _get_np_loc(ankle_right) - _get_np_loc(foot_right)
             z = np.cross(w, y)
             if np.sqrt(sum(z ** 2)) < 1e-6:
                 w = _get_np_loc(hip_left) - _get_np_loc(ankle_left)
@@ -208,12 +251,11 @@ class MotionManager:
             leg_r_rot = np.vstack((x, y, z)).T
 
             # left leg
-
             y = _get_np_loc(knee_left) - _get_np_loc(ankle_left)
-            w = _get_np_loc(hip_left) - _get_np_loc(ankle_left)
+            w = _get_np_loc(ankle_left) - _get_np_loc(foot_left)
             z = np.cross(w, y)
             if np.sqrt(sum(z ** 2)) < 1e-6:
-                w = _get_np_loc(hip_right) - _get_np_loc(ankle_left)
+                w = _get_np_loc(hip_right) - _get_np_loc(ankle_right)
                 z = np.cross(w, y)
             x = np.cross(y, z)
 
@@ -223,30 +265,81 @@ class MotionManager:
 
             leg_l_rot = np.vstack((x, y, z)).T
 
+            # right arm
+            y = _get_np_loc(elbow_right) - _get_np_loc(hand_right)
+            w = _get_np_loc(elbow_right) - _get_np_loc(chest_right)
+            z = np.cross(w, y)
+            if np.sqrt(sum(z ** 2)) < 1e-6:
+                w = _get_np_loc(chest_left) - _get_np_loc(hand_left)
+                z = np.cross(w, y)
+            x = np.cross(y, z)
+
+            x = x / np.sqrt(sum(x ** 2))
+            y = y / np.sqrt(sum(y ** 2))
+            z = z / np.sqrt(sum(z ** 2))
+
+            arm_r_rot = np.vstack((x, y, z)).T
+
+            # left arm
+            y = _get_np_loc(elbow_left) - _get_np_loc(hand_left)
+            w = _get_np_loc(elbow_left) - _get_np_loc(chest_left)
+            z = np.cross(w, y)
+            if np.sqrt(sum(z ** 2)) < 1e-6:
+                w = _get_np_loc(chest_left) - _get_np_loc(chest_right)
+                z = np.cross(w, y)
+            x = np.cross(y, z)
+
+            x = x / np.sqrt(sum(x ** 2))
+            y = y / np.sqrt(sum(y ** 2))
+            z = z / np.sqrt(sum(z ** 2))
+
+            arm_l_rot = np.vstack((x, y, z)).T
+
+            # Correct and store
+            rot_chest = R.from_matrix(chest_rot).as_euler("xyz", degrees=True)
             rot_hip = R.from_matrix(hip_rot).as_euler("xyz", degrees=True)
+            rot_head = R.from_matrix(arm_l_rot).as_euler("xyz", degrees=True)
             rot_leg_r = R.from_matrix(leg_r_rot).as_euler("xyz", degrees=True)
             rot_leg_l = R.from_matrix(leg_l_rot).as_euler("xyz", degrees=True)
+            rot_arm_r = R.from_matrix(arm_r_rot).as_euler("xyz", degrees=True)
+            rot_arm_l = R.from_matrix(arm_l_rot).as_euler("xyz", degrees=True)
 
+            cd = _get_np_loc(chest_down, listType=True)
+            cl = _get_np_loc(chest_left, listType=True)
+            c = {"x": cd[0], "y": cl[1], "z": cd[2]}
             h = _get_np_loc(hip_up, listType=True, xyz=True)
             kl = _get_np_loc(knee_left, listType=True, xyz=True)
             kr = _get_np_loc(knee_right, listType=True, xyz=True)
+            al = _get_np_loc(hand_left, listType=True, xyz=True)
+            ar = _get_np_loc(hand_right, listType=True, xyz=True)
+            hh = _get_np_loc(head_top, listType=True, xyz=True)
 
+            rxc, ryc, rzc = list(rot_chest)
             rxh, ryh, rzh = list(rot_hip)
+            _, _, rzhh = list(rot_head)
             rxkl, rykl, rzkl = list(rot_leg_l)
             rxkr, rykr, rzkr = list(rot_leg_r)
+            rxal, ryal, rzal = list(rot_leg_l)
+            rxar, ryar, rzar = list(rot_leg_r)
 
             marker_dict = {
+                "head": {"location": hh,
+                         "rotation": {"x": -rxc, "y": ryc, "z": rzhh}},
+                "chest": {"location": c,
+                          "rotation": {"x": -rxc - 90, "y": ryc, "z": rzc}},
                 "hip": {"location": h,
                         "rotation": {"x": rxh + 90, "y": ryh, "z": rzh}},
-                "leg_l": {"location": kl,
-                          "rotation": {"x": rxkl - 90, "y": rykl, "z": rzkl}},
-                "leg_r": {"location": kr,
-                          "rotation": {"x": rxkr - 90, "y": rykr, "z": rzkr }},
-                "foot_l": _only_loc("14"),
-                "foot_r": _only_loc("04")
+                "leg_r": {"location": kl,
+                          "rotation": {"x": rxkl - 90, "y": rykl - 90, "z": rzkl}},
+                "leg_l": {"location": kr,
+                          "rotation": {"x": rxkr - 90, "y": rykr - 90, "z": rzkr}},
+                "foot_r": _only_loc(foot_left),
+                "foot_l": _only_loc(foot_right),
+                "arm_r": {"location": al,
+                          "rotation": {"x": rxal, "y": ryal - 60, "z": rzal}},
+                "arm_l": {"location": ar,
+                          "rotation": {"x": rxar, "y": ryar + 110, "z": rzar}},
             }
-
-            print(f"[{index} - MARKERS ADDED] \n{marker_dict}\n\n")
             markers[idx].append(marker_dict)
 
         print("[READY] Motion returned as locations and emulated trackers")
@@ -289,9 +382,31 @@ if __name__ == "__main__":
     # [CC-BY] (https://creativecommons.org/licenses/by/3.0/)
     # via Poly Pizza (https://poly.pizza/m/3g9sc265XVC)
 
+    # HTC Vive Controller by serkanmert
+    # [CC-BY] (https://creativecommons.org/licenses/by/4.0/)
+    # via Sketchfab (https://sketchfab.com/3d-models/htc-vive-controller-f9cc5f021c044a25b2c89029448d9602)
+
+    # HTC Vive Headset by Eternal Realm
+    # [CC-BY] (https://creativecommons.org/licenses/by/4.0/)
+    # via Sketchfab (https://sketchfab.com/3d-models/htc-vive-4818cdb261714a70a08991a3d4ed3749)
+
     scale = 0.001
+    scale_control = 1
+    scale_head = 0.03
 
     tracker_model = "./resources/HTC_Vive_Tracker.obj"
+    controller_model = "./resources/HTC_Vive_Controller.obj"
+    headset_model = "./resources/HTC_Vive_Headset.obj"
+
+    head = Entity(model=headset_model,
+                  color=color.dark_gray,
+                  scale=(scale_head, scale_head, scale_head),
+                  shader=basic_lighting_shader)
+
+    chest = Entity(model=tracker_model,
+                   color=color.dark_gray,
+                   scale=(scale, scale, scale),
+                   shader=basic_lighting_shader)
 
     hip = Entity(model=tracker_model,
                  color=color.dark_gray,
@@ -318,11 +433,25 @@ if __name__ == "__main__":
                    scale=(scale, scale, scale),
                    shader=basic_lighting_shader)
 
+    arml = Entity(model=controller_model,
+                  color=color.dark_gray,
+                  scale=(scale_control, scale_control, scale_control),
+                  shader=basic_lighting_shader)
+
+    armr = Entity(model=controller_model,
+                  color=color.dark_gray,
+                  scale=(scale_control, scale_control, scale_control),
+                  shader=basic_lighting_shader)
+
+    chest.double_sided = True
     hip.double_sided = True
     legl.double_sided = True
     legr.double_sided = True
     footl.double_sided = True
     footr.double_sided = True
+    arml.double_sided = True
+    armr.double_sided = True
+    head.double_sided = True
 
     frameidx = 0
 
@@ -342,6 +471,15 @@ if __name__ == "__main__":
         frame = frames["markers"][frameidxdelta]
         frame = frame[0]
 
+        # Positions
+        head.position = Vec3(frame["head"]["location"]["x"],
+                             frame["head"]["location"]["y"],
+                             frame["head"]["location"]["z"])
+
+        chest.position = Vec3(frame["chest"]["location"]["x"],
+                              frame["chest"]["location"]["y"],
+                              frame["chest"]["location"]["z"])
+
         hip.position = Vec3(frame["hip"]["location"]["x"],
                             frame["hip"]["location"]["y"],
                             frame["hip"]["location"]["z"])
@@ -349,31 +487,63 @@ if __name__ == "__main__":
         legl.position = Vec3(frame["leg_l"]["location"]["x"],
                              frame["leg_l"]["location"]["y"],
                              frame["leg_l"]["location"]["z"])
+
         legr.position = Vec3(frame["leg_r"]["location"]["x"],
                              frame["leg_r"]["location"]["y"],
                              frame["leg_r"]["location"]["z"])
+
         footl.position = Vec3(frame["foot_l"]["location"]["x"],
                               frame["foot_l"]["location"]["y"],
                               frame["foot_l"]["location"]["z"])
+
         footr.position = Vec3(frame["foot_r"]["location"]["x"],
                               frame["foot_r"]["location"]["y"],
                               frame["foot_r"]["location"]["z"])
 
+        arml.position = Vec3(frame["arm_l"]["location"]["x"],
+                             frame["arm_l"]["location"]["y"],
+                             frame["arm_l"]["location"]["z"])
+
+        armr.position = Vec3(frame["arm_r"]["location"]["x"],
+                             frame["arm_r"]["location"]["y"],
+                             frame["arm_r"]["location"]["z"])
+
+        # Rotations
+        head.rotation = Vec3(frame["head"]["rotation"]["x"],
+                             frame["head"]["rotation"]["y"],
+                             frame["head"]["rotation"]["z"])
+
+        chest.rotation = Vec3(frame["chest"]["rotation"]["x"],
+                              frame["chest"]["rotation"]["y"],
+                              frame["chest"]["rotation"]["z"])
+
         hip.rotation = Vec3(frame["hip"]["rotation"]["x"],
                             frame["hip"]["rotation"]["y"],
                             frame["hip"]["rotation"]["z"])
+
         legl.rotation = Vec3(-frame["leg_l"]["rotation"]["x"],
                              -frame["leg_l"]["rotation"]["y"],
                              -frame["leg_l"]["rotation"]["z"])
+
         legr.rotation = Vec3(-frame["leg_r"]["rotation"]["x"],
                              -frame["leg_r"]["rotation"]["y"],
                              -frame["leg_r"]["rotation"]["z"])
+
         footl.rotation = Vec3(frame["foot_l"]["rotation"]["x"],
                               frame["foot_l"]["rotation"]["y"],
                               frame["foot_l"]["rotation"]["z"])
+
         footr.rotation = Vec3(frame["foot_r"]["rotation"]["x"],
                               frame["foot_r"]["rotation"]["y"],
                               frame["foot_r"]["rotation"]["z"])
+
+        arml.rotation = Vec3(frame["arm_l"]["rotation"]["x"],
+                             frame["arm_l"]["rotation"]["y"],
+                             frame["arm_l"]["rotation"]["z"])
+
+        armr.rotation = Vec3(frame["arm_r"]["rotation"]["x"],
+                             frame["arm_r"]["rotation"]["y"],
+                             frame["arm_r"]["rotation"]["z"])
 
 
     ec = EditorCamera(ignore_scroll_on_ui=True)
