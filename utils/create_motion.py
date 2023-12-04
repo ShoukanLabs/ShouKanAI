@@ -185,9 +185,16 @@ class MotionManager:
                                              i[name]["y"] - frame[-1]["global"]["y"],
                                              i[name]["z"] - frame[-1]["global"]["z"]])
 
-            def _only_loc(name):
-                return {"location": _get_np_loc(name, xyz=True),
+            def _only_loc(name, rotation=None):
+                if rotation is None:
+                    return {"location": _get_np_loc(name, xyz=True),
                         "rotation": {"x": 0, "y": 0, "z": 0}}
+                else:
+                   x, y, z = list(rotation)
+
+                   return {"location": _get_np_loc(name, xyz=True),
+                        "rotation": {"x": x, "y": y, "z": z}}
+
 
             hip_left = "11"
             hip_right = "01"
@@ -352,8 +359,8 @@ class MotionManager:
                           "rotation": {"x": rxkl - 90, "y": rykl - 90, "z": rzkl}},
                 "leg_l": {"location": kr,
                           "rotation": {"x": rxkr - 90, "y": rykr - 90, "z": rzkr}},
-                "foot_r": _only_loc(foot_left),
-                "foot_l": _only_loc(foot_right),
+                "foot_r": _only_loc(foot_left, rot_leg_l),
+                "foot_l": _only_loc(foot_right, rot_leg_r),
                 "arm_r": {"location": al,
                           "rotation": {"x": rxal, "y": ryal - 60, "z": rzal}},
                 "arm_l": {"location": ar,
