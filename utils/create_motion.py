@@ -18,7 +18,7 @@ from scipy.spatial.transform import Rotation as R
 
 from pythonosc import udp_client
 
-from steamvr_manager import SteamVRDeviceManager
+from steamvr_manager import SteamVRDeviceManager, force_tracker_cam
 
 client = udp_client.SimpleUDPClient("127.0.0.1", 9000)
 
@@ -486,6 +486,8 @@ if __name__ == "__main__":
     frameidx = 0
 
     text_entity = Text("Frame: 0", world_scale=30, origin=(4.5, -11))
+
+    force_tracker_cam(True)
 
     device_manager = SteamVRDeviceManager()
 

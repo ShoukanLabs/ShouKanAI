@@ -39,6 +39,28 @@ def force_driver(set_driver_state=False,
         json.dump(data, jsonFile)
 
 
+def force_tracker_cam(set_state=False,
+                      settings_path=r"C:\Program Files (x86)\Steam\config\steamvr.vrsettings",
+                      driver_settings_path=r"C:\Program Files (x86)\Steam\steamapps\common\SteamVR\drivers\null\resources\settings\default.vrsettings"):
+    # force null driver
+    with open(settings_path, "r") as jsonFile:
+        data = json.load(jsonFile)
+        with open(f"{settings_path}.backup", "w") as jsonFile:
+            json.dump(data, jsonFile)
+
+    if set_state:
+        data["trackers"] = {"/devices/hobovr/t0": "TrackerRole_Camera"}
+        data["TrackingOverrides"] = {"/devices/hobovr/t0": "/user/head"}
+    else:
+        data["trackers"] = {}
+        data["TrackingOverrides"] = {}
+
+    with open(f"{settings_path}", "w") as jsonFile:
+        json.dump(data, jsonFile)
+
+    force_driver(True, settings_path, driver_settings_path)
+
+
 def launch_steamvr():
     subprocess.run("start steam://run/250820", shell=True)
 
@@ -107,7 +129,7 @@ class SteamVRDeviceManager:
         self.device_list = self.MANAGER_UDU_MSG_t.pack(
             20,  # HobovrManagerMsgType::Emsg_uduString
             9,  # 6 devices - 1 hmd, 2 controllers, 6 trackers
-            0, 13,  # device description
+            2, 13,  # device description - /devices/hobovr/t0
             1, 22,  # device description
             1, 22,  # device description
             2, 13,  # device description
@@ -286,7 +308,6 @@ class SteamVRDeviceManager:
         )
 
         self.tracking_socket.sendall(hmd_pose + packet + self.SEND_TERMINATOR)
-
 
     @staticmethod
     def get_quaternion_from_euler(roll, pitch, yaw):
