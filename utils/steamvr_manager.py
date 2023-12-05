@@ -4,6 +4,7 @@ import struct
 import socket
 import time
 import numpy as np
+import pyrr
 
 
 # deprecated but I'll keep it around since it`s useful
@@ -65,15 +66,13 @@ class SteamVRDeviceManager:
         # Devices
         self.device_list = None
 
-    def start_listening(self):
-        launch_steamvr()
-        time.sleep(5)
-
         self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.serversocket.bind(('', 6969))
         self.serversocket.listen(2)  # driver connects with 2 sockets
 
         print("[DRIVER] Waiting for driver to connect...")
+
+        launch_steamvr()
 
         self.client_a = self.serversocket.accept()
         self.client_b = self.serversocket.accept()
@@ -103,7 +102,6 @@ class SteamVRDeviceManager:
             self.client_b[0].close()
 
             self.serversocket.close()
-            return
 
         self.device_list = self.MANAGER_UDU_MSG_t.pack(
             20,  # HobovrManagerMsgType::Emsg_uduString
@@ -139,7 +137,7 @@ class SteamVRDeviceManager:
         hmd_pose = self.POSE_t.pack(
             lx, ly, lz,
             x, y, z, w,
-            velocity / 10 / lx, ly, lz,
+            lx, 0, 0,
             0, 0, 0
         )
 
@@ -162,7 +160,7 @@ class SteamVRDeviceManager:
         packet += self.CONTROLLER_t.pack(
             lx, ly, lz,  # x y z
             x, y, z, w,  # orientation quaternion
-            velocity / 10 / lx, ly, lz,  # velocity
+            lx, 0, 0,  # velocity
             0, 0, 0,  # angular velocity
             0, 0, _get_button(app_menu), 0, 0, 0, 0, 0, _get_button(click_trigger)  # controller inputs
         )
@@ -180,7 +178,7 @@ class SteamVRDeviceManager:
         packet += self.CONTROLLER_t.pack(
             lx, ly, lz,  # x y z
             x, y, z, w,  # orientation quaternion
-            velocity / 10 / lx, ly, lz,  # velocity
+            lx, 0, 0,  # velocity
             0, 0, 0,  # angular velocity
             0, 0, _get_button(app_menu), 0, 0, 0, 0, 0, _get_button(click_trigger)  # controller inputs
         )
@@ -198,7 +196,7 @@ class SteamVRDeviceManager:
         packet += self.POSE_t.pack(
             lx, ly, lz,
             x, y, z, w,
-            velocity / 10 / lx, ly, lz,
+            lx, 0, 0,
             0, 0, 0
         )
 
@@ -215,7 +213,7 @@ class SteamVRDeviceManager:
         packet += self.POSE_t.pack(
             lx, ly, lz,
             x, y, z, w,
-            velocity / 10 / lx, ly, lz,
+            lx, 0, 0,
             0, 0, 0
         )
 
@@ -232,7 +230,7 @@ class SteamVRDeviceManager:
         packet += self.POSE_t.pack(
             lx, ly, lz,
             x, y, z, w,
-            velocity / 10 / lx, ly, lz,
+            lx, 0, 0,
             0, 0, 0
         )
 
@@ -249,7 +247,7 @@ class SteamVRDeviceManager:
         packet += self.POSE_t.pack(
             lx, ly, lz,
             x, y, z, w,
-            velocity / 10 / lx, ly, lz,
+            lx, 0, 0,
             0, 0, 0
         )
 
@@ -266,7 +264,7 @@ class SteamVRDeviceManager:
         packet += self.POSE_t.pack(
             lx, ly, lz,
             x, y, z, w,
-            velocity / 10 / lx, ly, lz,
+            lx, 0, 0,
             0, 0, 0
         )
 
@@ -283,12 +281,14 @@ class SteamVRDeviceManager:
         packet += self.POSE_t.pack(
             lx, ly, lz,
             x, y, z, w,
-            velocity / 10 / lx, ly, lz,
+            lx, 0, 0,
             0, 0, 0
         )
 
+        print(len(hmd_pose))
+        print(len(packet))
         self.tracking_socket.sendall(hmd_pose + packet + self.SEND_TERMINATOR)
-        print(f"[SENT]: {hmd_pose + packet + self.SEND_TERMINATOR}")
+        print(f"[SENT]: {len(hmd_pose + packet + self.SEND_TERMINATOR)}")
 
 
     @staticmethod
@@ -314,3 +314,222 @@ class SteamVRDeviceManager:
             yaw / 2)
 
         return [qx, qy, qz, qw]
+
+
+if __name__ == "__main__":
+    TERMINATOR = b'\n'
+    SEND_TERMINATOR = b'\t\r\n'
+    MANAGER_UDU_MSG_t = struct.Struct("130I")
+    POSE_t = struct.Struct("13f")
+    CONTOLLER_t = struct.Struct("22f")
+
+    # here we assume that no server was running and only our driver will connect
+    # we assume the role of a server and a poser at the same time
+
+    serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    serversocket.bind(('', 6969))
+    serversocket.listen(2)  # driver connects with 2 sockets
+
+    #######################################################################
+    # now lets accept both of them and resolve
+
+    print("waiting for driver to connect...")
+
+    client_a = serversocket.accept()
+    client_b = serversocket.accept()
+
+    print("waiting for driver resolution...")
+
+    resp_a = client_a[0].recv(50)
+    resp_b = client_b[0].recv(50)
+
+    if TERMINATOR in resp_a:
+        id_msg_a, resp_a = resp_a.split(TERMINATOR, 1)
+
+    if TERMINATOR in resp_b:
+        id_msg_b, resp_b = resp_b.split(TERMINATOR, 1)
+
+    if id_msg_a == b"hello" and id_msg_b == b"monky":
+        tracking_socket = client_a[0]
+        manager_socket = client_b[0]
+
+    elif id_msg_b == b"hello" and id_msg_a == b"monky":
+        tracking_socket = client_b[0]
+        manager_socket = client_a[0]
+
+    else:
+        print("bad connection")
+        client_a[0].close()
+        client_b[0].close()
+
+        serversocket.close()
+
+        exit()
+
+    input("press anything to start the test...")
+
+    #######################################################################
+    # now lets add some trackers
+
+    # tell the manager about current device setup
+    device_list = MANAGER_UDU_MSG_t.pack(
+        20,  # HobovrManagerMsgType::Emsg_uduString
+        9,  # 6 devices - 1 hmd, 2 controllers, 6 trackers
+        0, 13,  # device description
+        1, 22,  # device description
+        1, 22,  # device description
+        2, 13,  # device description
+        2, 13,  # device description
+        2, 13,  # device description
+        2, 13,  # device description
+        2, 13,  # device description
+        2, 13,  # device description
+        *np.zeros((128 - 2 * 9), dtype=int)
+    )
+
+    manager_socket.sendall(device_list + SEND_TERMINATOR)
+
+    print("hmd with controllers and trackers: orbit...")
+
+    print("press ctrl+C to stop...")
+
+    try:
+        i = 0
+
+        while 1:
+            q = pyrr.Quaternion.from_y_rotation(i / 180 * np.pi)
+
+            mm = pyrr.matrix33.create_from_quaternion(q)
+
+            loc = np.array([0, -0.5, -1])
+
+            # loc = mm.dot(loc)
+
+            packet = b''
+
+            temp = CONTOLLER_t.pack(
+                *mm.dot(loc),
+                1, 0, 0, 0,
+                int(i < 10), 0, 0,
+                0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0
+            )
+            packet += temp
+
+            q = pyrr.Quaternion.from_y_rotation(i / (180 * 2) * np.pi)
+
+            mm = pyrr.matrix33.create_from_quaternion(q)
+
+            temp = CONTOLLER_t.pack(
+                *mm.dot(loc * [1, 1, 2]),
+                1, 0, 0, 0,
+                int(i < 10), 0, 0,
+                0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0
+            )
+            packet += temp
+
+            q = pyrr.Quaternion.from_y_rotation(i / (180 * 3) * np.pi)
+
+            mm = pyrr.matrix33.create_from_quaternion(q)
+
+            temp = POSE_t.pack(
+                *mm.dot(loc * [1, 1, 3]),
+                1, 0, 0, 0,
+                int(i < 10), 0, 0,
+                0, 0, 0,
+            )
+            packet += temp
+
+            q = pyrr.Quaternion.from_y_rotation(i / (180 * 3) * np.pi)
+
+            mm = pyrr.matrix33.create_from_quaternion(q)
+
+            temp = POSE_t.pack(
+                1, 1, 3,
+                1, 3.2, 2.7362, 283.2827,
+                int(i < 10), 0, 0,
+                0, 0, 0,
+            )
+            packet += temp
+
+            q = pyrr.Quaternion.from_y_rotation(i / (180 * 3) * np.pi)
+
+            mm = pyrr.matrix33.create_from_quaternion(q)
+
+            temp = POSE_t.pack(
+                *mm.dot(loc * [1, 1, 3]),
+                1, 0, 0, 0,
+                int(i < 10), 0, 0,
+                0, 0, 0,
+            )
+            packet += temp
+
+            q = pyrr.Quaternion.from_y_rotation(i / (180 * 3) * np.pi)
+
+            mm = pyrr.matrix33.create_from_quaternion(q)
+
+            temp = POSE_t.pack(
+                *mm.dot(loc * [1, 1, 3]),
+                1, 0, 0, 0,
+                int(i < 10), 0, 0,
+                0, 0, 0,
+            )
+            packet += temp
+
+            q = pyrr.Quaternion.from_y_rotation(i / (180 * 3.5) * np.pi)
+
+            mm = pyrr.matrix33.create_from_quaternion(q)
+
+            temp = POSE_t.pack(
+                *mm.dot(loc * [1, 1, 4]),
+                1, 0, 0, 0,
+                int(i < 10), 0, 0,
+                0, 0, 0,
+            )
+            packet += temp
+
+            q = pyrr.Quaternion.from_y_rotation(i / (180 * 3.8) * np.pi)
+
+            mm = pyrr.matrix33.create_from_quaternion(q)
+
+            temp = POSE_t.pack(
+                *mm.dot(loc * [1, 1, 5]),
+                1, 0, 0, 0,
+                int(i < 10), 0, 0,
+                0, 0, 0,
+            )
+            packet += temp
+
+            hmd_pose = POSE_t.pack(
+                int(i % 60 == 0) / 10, 0, 0,
+                0, 0, -1, 0,
+                # a trick to make steamvr think the hmd is active
+                int(i % 60 == 0) / 10, 0, 0,
+                0, 0, 0
+            )
+
+            tracking_socket.sendall(
+                hmd_pose + packet + SEND_TERMINATOR
+            )
+
+            print(len(hmd_pose))
+            print(len(packet))
+            print(len(hmd_pose) + len(packet) + len(SEND_TERMINATOR))
+
+            if i % 360 == 0:
+                print(f"last q: {q}")
+
+            time.sleep(1 / 60)
+            i += 1
+
+    except KeyboardInterrupt:
+        print("interrupted, exiting...")
+
+    #######################################################################
+    # the end, time to die ^-^
+
+    client_a[0].close()
+    client_b[0].close()
+
+    serversocket.close()
