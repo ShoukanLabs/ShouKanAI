@@ -16,11 +16,16 @@ from tqdm import tqdm
 
 from scipy.spatial.transform import Rotation as R
 
+from pythonosc import udp_client
+
+from steamvr_manager import SteamVRDeviceManager
+
+client = udp_client.SimpleUDPClient("127.0.0.1", 9000)
+
 # create a window
 window.borderless = False
 window.title = 'Motion Debug'
 visualizer = Ursina(vsync=True, use_ingame_console=False)
-
 
 class MotionManager:
     def __init__(self,
@@ -482,6 +487,8 @@ if __name__ == "__main__":
 
     text_entity = Text("Frame: 0", world_scale=30, origin=(4.5, -11))
 
+    device_manager = SteamVRDeviceManager()
+    device_manager.start_listening()
 
     def update():
         global frameidx
@@ -495,6 +502,7 @@ if __name__ == "__main__":
 
         frame = frames["markers"][frameidxdelta]
         frame = frame[0]
+        device_manager.update_pose_full(frame, velocity=frameidx)
 
         # Positions
         head.position = Vec3(frame["head"]["location"]["x"],
