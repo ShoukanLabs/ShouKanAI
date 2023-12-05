@@ -489,6 +489,10 @@ if __name__ == "__main__":
 
     device_manager = SteamVRDeviceManager()
 
+    time.sleep(10)
+
+    device_manager.create_trackers()
+
     # test_frame = {
     #             "head": {
     #                 "location": {

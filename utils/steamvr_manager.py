@@ -103,6 +103,7 @@ class SteamVRDeviceManager:
 
             self.serversocket.close()
 
+    def create_trackers(self):
         self.device_list = self.MANAGER_UDU_MSG_t.pack(
             20,  # HobovrManagerMsgType::Emsg_uduString
             9,  # 6 devices - 1 hmd, 2 controllers, 6 trackers
@@ -120,8 +121,7 @@ class SteamVRDeviceManager:
 
         self.manager_socket.sendall(self.device_list + self.SEND_TERMINATOR)
 
-    def update_pose_full(self, frame, app_menu=False, click_trigger=False, velocity=1, scale=2):
-
+    def update_pose_full(self, frame, app_menu=False, click_trigger=False, velocity=1, scale=1):
         packet = b''
 
         lx = frame["head"]["location"]["x"] * scale
@@ -137,7 +137,7 @@ class SteamVRDeviceManager:
         hmd_pose = self.POSE_t.pack(
             lx, ly, lz,
             x, y, z, w,
-            lx, 0, 0,
+            float(velocity < 10), 0, 0,
             0, 0, 0
         )
 
@@ -160,7 +160,7 @@ class SteamVRDeviceManager:
         packet += self.CONTROLLER_t.pack(
             lx, ly, lz,  # x y z
             x, y, z, w,  # orientation quaternion
-            lx, 0, 0,  # velocity
+            float(velocity < 10), 0, 0,  # velocity
             0, 0, 0,  # angular velocity
             0, 0, _get_button(app_menu), 0, 0, 0, 0, 0, _get_button(click_trigger)  # controller inputs
         )
@@ -178,7 +178,7 @@ class SteamVRDeviceManager:
         packet += self.CONTROLLER_t.pack(
             lx, ly, lz,  # x y z
             x, y, z, w,  # orientation quaternion
-            lx, 0, 0,  # velocity
+            float(velocity < 10), 0, 0,  # velocity
             0, 0, 0,  # angular velocity
             0, 0, _get_button(app_menu), 0, 0, 0, 0, 0, _get_button(click_trigger)  # controller inputs
         )
@@ -196,7 +196,7 @@ class SteamVRDeviceManager:
         packet += self.POSE_t.pack(
             lx, ly, lz,
             x, y, z, w,
-            lx, 0, 0,
+            float(velocity < 10), 0, 0,
             0, 0, 0
         )
 
@@ -213,7 +213,7 @@ class SteamVRDeviceManager:
         packet += self.POSE_t.pack(
             lx, ly, lz,
             x, y, z, w,
-            lx, 0, 0,
+            float(velocity < 10), 0, 0,
             0, 0, 0
         )
 
@@ -230,7 +230,7 @@ class SteamVRDeviceManager:
         packet += self.POSE_t.pack(
             lx, ly, lz,
             x, y, z, w,
-            lx, 0, 0,
+            float(velocity < 10), 0, 0,
             0, 0, 0
         )
 
@@ -247,7 +247,7 @@ class SteamVRDeviceManager:
         packet += self.POSE_t.pack(
             lx, ly, lz,
             x, y, z, w,
-            lx, 0, 0,
+            float(velocity < 10), 0, 0,
             0, 0, 0
         )
 
@@ -264,7 +264,7 @@ class SteamVRDeviceManager:
         packet += self.POSE_t.pack(
             lx, ly, lz,
             x, y, z, w,
-            lx, 0, 0,
+            float(velocity < 10), 0, 0,
             0, 0, 0
         )
 
@@ -281,14 +281,11 @@ class SteamVRDeviceManager:
         packet += self.POSE_t.pack(
             lx, ly, lz,
             x, y, z, w,
-            lx, 0, 0,
+            float(velocity < 10), 0, 0,
             0, 0, 0
         )
 
-        print(len(hmd_pose))
-        print(len(packet))
         self.tracking_socket.sendall(hmd_pose + packet + self.SEND_TERMINATOR)
-        print(f"[SENT]: {len(hmd_pose + packet + self.SEND_TERMINATOR)}")
 
 
     @staticmethod
@@ -386,6 +383,8 @@ if __name__ == "__main__":
         2, 13,  # device description
         *np.zeros((128 - 2 * 9), dtype=int)
     )
+
+    print(device_list)
 
     manager_socket.sendall(device_list + SEND_TERMINATOR)
 
