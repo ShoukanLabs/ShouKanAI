@@ -118,7 +118,7 @@ class MotionManager:
 
     @staticmethod
     def retrieve_markers(joints):
-        print(f"[STARTING] ")
+        print(f"[STARTING] Reading joints and converting to trackers")
         data = joints.copy().reshape(len(joints), -1, 3)
 
         framesTotal = data.shape[0]
