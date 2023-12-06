@@ -345,7 +345,7 @@ class MotionManager:
 
             marker_dict = {
                 "head": {"location": hh,
-                         "rotation": {"x": -rxc, "y": ryc, "z": rzc + 30}, "qrotation": qrot_head},
+                         "rotation": {"x": -rxc, "y": ryc, "z": rzc}, "qrotation": qrot_head},
                 "chest": {"location": c,
                           "rotation": {"x": -rxc - 90, "y": ryc, "z": rzc}, "qrotation": qrot_chest},
                 "hip": {"location": h,
@@ -653,7 +653,7 @@ if __name__ == "__main__":
         # Rotations
         head.rotation = Vec3(frame["head"]["rotation"]["x"],
                              frame["head"]["rotation"]["y"],
-                             frame["head"]["rotation"]["z"])
+                             frame["head"]["rotation"]["z"] + 180)
 
         chest.rotation = Vec3(frame["chest"]["rotation"]["x"],
                               frame["chest"]["rotation"]["y"],

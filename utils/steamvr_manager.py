@@ -160,7 +160,7 @@ class SteamVRDeviceManager:
 
         rx = frame["head"]["rotation"]["x"] * rot_scale
         ry = 1 - frame["head"]["rotation"]["y"] * rot_scale
-        rz = 180 + frame["head"]["rotation"]["z"] * rot_scale
+        rz = frame["head"]["rotation"]["z"] * rot_scale
 
         rot = R.from_euler('zyx', [rx, ry, rz], degrees=True)
         x, y, z, w = rot.as_quat(False)
@@ -184,7 +184,7 @@ class SteamVRDeviceManager:
 
         rx = frame["arm_r"]["rotation"]["x"] * rot_scale
         ry = 1 - frame["arm_r"]["rotation"]["y"] * rot_scale
-        rz = 180 + frame["arm_r"]["rotation"]["z"] * rot_scale
+        rz = frame["arm_r"]["rotation"]["z"] * rot_scale
 
         rot = R.from_euler('zyx', [rx, ry, rz], degrees=True)
         x, y, z, w = rot.as_quat(False)
@@ -203,7 +203,7 @@ class SteamVRDeviceManager:
 
         rx = frame["arm_l"]["rotation"]["x"] * rot_scale
         ry = 1 - frame["arm_l"]["rotation"]["y"] * rot_scale
-        rz = 180 + frame["arm_l"]["rotation"]["z"] * rot_scale
+        rz = frame["arm_l"]["rotation"]["z"] * rot_scale
 
         rot = R.from_euler('zyx', [rx, ry, rz], degrees=True)
         x, y, z, w = rot.as_quat(False)
@@ -222,7 +222,7 @@ class SteamVRDeviceManager:
 
         rx = frame["chest"]["rotation"]["x"] * rot_scale
         ry = 1 - frame["chest"]["rotation"]["y"] * rot_scale
-        rz = 180 + frame["chest"]["rotation"]["z"] * rot_scale
+        rz = frame["chest"]["rotation"]["z"] * rot_scale
 
         rot = R.from_euler('zyx', [rx, ry, rz], degrees=True)
         x, y, z, w = rot.as_quat(False)
@@ -240,7 +240,7 @@ class SteamVRDeviceManager:
 
         rx = frame["hip"]["rotation"]["x"] * rot_scale
         ry = 1 - frame["hip"]["rotation"]["y"] * rot_scale
-        rz = 180 + frame["hip"]["rotation"]["z"] * rot_scale
+        rz = frame["hip"]["rotation"]["z"] * rot_scale
 
         rot = R.from_euler('zyx', [rx, ry, rz], degrees=True)
         x, y, z, w = rot.as_quat(False)
@@ -258,7 +258,7 @@ class SteamVRDeviceManager:
 
         rx = frame["leg_l"]["rotation"]["x"] * rot_scale
         ry = 1 - frame["leg_l"]["rotation"]["y"] * rot_scale
-        rz = 180 + frame["leg_l"]["rotation"]["z"] * rot_scale
+        rz = frame["leg_l"]["rotation"]["z"] * rot_scale
 
         rot = R.from_euler('zyx', [rx, ry, rz], degrees=True)
         x, y, z, w = rot.as_quat(False)
@@ -276,7 +276,7 @@ class SteamVRDeviceManager:
 
         rx = frame["leg_r"]["rotation"]["x"] * rot_scale
         ry = 1 - frame["leg_r"]["rotation"]["y"] * rot_scale
-        rz = 180 + frame["leg_r"]["rotation"]["z"] * rot_scale
+        rz = frame["leg_r"]["rotation"]["z"] * rot_scale
 
         rot = R.from_euler('zyx', [rx, ry, rz], degrees=True)
         x, y, z, w = rot.as_quat(False)
@@ -294,7 +294,7 @@ class SteamVRDeviceManager:
 
         rx = frame["foot_l"]["rotation"]["x"] * rot_scale
         ry = 1 - frame["foot_l"]["rotation"]["y"] * rot_scale
-        rz = 180 + frame["foot_l"]["rotation"]["z"] * rot_scale
+        rz = frame["foot_l"]["rotation"]["z"] * rot_scale
 
         rot = R.from_euler('zyx', [rx, ry, rz], degrees=True)
         x, y, z, w = rot.as_quat(False)
@@ -312,7 +312,7 @@ class SteamVRDeviceManager:
 
         rx = frame["foot_r"]["rotation"]["x"] * rot_scale
         ry = 1 - frame["foot_r"]["rotation"]["y"] * rot_scale
-        rz = 180 + frame["foot_r"]["rotation"]["z"] * rot_scale
+        rz = frame["foot_r"]["rotation"]["z"] * rot_scale
 
         rot = R.from_euler('zyx', [rx, ry, rz], degrees=True)
         x, y, z, w = rot.as_quat(False)
