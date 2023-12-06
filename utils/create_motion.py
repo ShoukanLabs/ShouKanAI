@@ -190,7 +190,7 @@ class MotionManager:
                                              i[name]["y"] - frame[-1]["global"]["y"],
                                              i[name]["z"] - frame[-1]["global"]["z"]])
 
-            def _only_loc(name, rotation=None):
+            def _only_loc(name, rotation=None, qrot=None):
                 if rotation is None:
                     return {"location": _get_np_loc(name, xyz=True),
                             "rotation": {"x": 0, "y": 0, "z": 0}}
@@ -198,7 +198,7 @@ class MotionManager:
                     rx, ry, rz = list(rotation)
 
                     return {"location": _get_np_loc(name, xyz=True),
-                            "rotation": {"x": rx, "y": ry, "z": rz}}
+                            "rotation": {"x": rx, "y": ry, "z": rz}, "qrotation": qrot}
 
             hip_left = "11"
             hip_right = "01"
@@ -334,6 +334,14 @@ class MotionManager:
             rot_arm_r = R.from_matrix(arm_r_rot).as_euler("xyz", degrees=True)
             rot_arm_l = R.from_matrix(arm_l_rot).as_euler("xyz", degrees=True)
 
+            qrot_chest = R.from_matrix(chest_rot).as_quat(True)
+            qrot_hip = R.from_matrix(hip_rot).as_quat(True)
+            qrot_head = R.from_matrix(arm_l_rot).as_quat(True)
+            qrot_leg_r = R.from_matrix(leg_r_rot).as_quat(True)
+            qrot_leg_l = R.from_matrix(leg_l_rot).as_quat(True)
+            qrot_arm_r = R.from_matrix(arm_r_rot).as_quat(True)
+            qrot_arm_l = R.from_matrix(arm_l_rot).as_quat(True)
+
             cd = _get_np_loc(chest_down, listType=True)
             cl = _get_np_loc(chest_left, listType=True)
             c = {"x": cd[0], "y": cl[1], "z": cd[2]}
@@ -354,21 +362,21 @@ class MotionManager:
 
             marker_dict = {
                 "head": {"location": hh,
-                         "rotation": {"x": -rxc, "y": ryc, "z": rzhh + 30}},
+                         "rotation": {"x": -rxc, "y": ryc, "z": rzhh + 30}, "qrotation": qrot_head},
                 "chest": {"location": c,
-                          "rotation": {"x": -rxc - 90, "y": ryc, "z": rzc}},
+                          "rotation": {"x": -rxc - 90, "y": ryc, "z": rzc}, "qrotation": qrot_chest},
                 "hip": {"location": h,
-                        "rotation": {"x": rxh + 90, "y": ryh, "z": rzh}},
+                        "rotation": {"x": rxh + 90, "y": ryh, "z": rzh}, "qrotation": qrot_hip},
                 "leg_r": {"location": kl,
-                          "rotation": {"x": rxkl - 90, "y": rykl - 90, "z": rzkl}},
+                          "rotation": {"x": rxkl - 90, "y": rykl - 90, "z": rzkl}, "qrotation": qrot_leg_r},
                 "leg_l": {"location": kr,
-                          "rotation": {"x": rxkr - 90, "y": rykr - 90, "z": rzkr}},
-                "foot_r": _only_loc(foot_left, rot_leg_l),
-                "foot_l": _only_loc(foot_right, rot_leg_r),
+                          "rotation": {"x": rxkr - 90, "y": rykr - 90, "z": rzkr}, "qrotation": qrot_leg_l},
+                "foot_r": _only_loc(foot_left, rot_leg_r, qrot_leg_r),
+                "foot_l": _only_loc(foot_right, rot_leg_l, qrot_leg_l),
                 "arm_r": {"location": al,
-                          "rotation": {"x": rxal, "y": ryal - 60, "z": rzal}},
+                          "rotation": {"x": rxal, "y": ryal - 60, "z": rzal}, "qrotation": qrot_arm_r},
                 "arm_l": {"location": ar,
-                          "rotation": {"x": rxar, "y": ryar + 110, "z": rzar}},
+                          "rotation": {"x": rxar, "y": ryar + 110, "z": rzar}, "qrotation": qrot_arm_l},
             }
             markers[idx].append(marker_dict)
 

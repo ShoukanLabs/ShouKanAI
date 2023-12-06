@@ -5,7 +5,7 @@ import socket
 import time
 import numpy as np
 import pyrr
-
+from scipy.spatial.transform import Rotation as R
 
 # deprecated but I'll keep it around since it`s useful
 def force_driver(set_driver_state=False,
@@ -58,7 +58,7 @@ def force_tracker_cam(set_state=False,
     with open(f"{settings_path}", "w") as jsonFile:
         json.dump(data, jsonFile)
 
-    force_driver(True, settings_path, driver_settings_path)
+    force_driver(set_state, settings_path, driver_settings_path)
 
 
 def launch_steamvr():
@@ -143,18 +143,19 @@ class SteamVRDeviceManager:
 
         self.manager_socket.sendall(self.device_list + self.SEND_TERMINATOR)
 
-    def update_pose_full(self, frame, app_menu=False, click_trigger=False, velocity=1, scale=1):
+    def update_pose_full(self, frame, app_menu=False, click_trigger=False, velocity=1, scale=1, rot_scale=0):
         packet = b''
 
         lx = frame["head"]["location"]["x"] * scale
         ly = frame["head"]["location"]["y"] * scale
         lz = frame["head"]["location"]["z"] * scale
 
-        rx = frame["head"]["rotation"]["x"]
-        ry = frame["head"]["rotation"]["y"]
-        rz = frame["head"]["rotation"]["z"]
+        rx = frame["head"]["rotation"]["x"] * rot_scale
+        ry = frame["head"]["rotation"]["y"] * rot_scale
+        rz = frame["head"]["rotation"]["z"] * rot_scale
 
-        x, y, z, w = self.get_quaternion_from_euler(rx, ry, rz)
+        rot = R.from_euler('xyz', [rx, ry, rz], degrees=True)
+        x, y, z, w = rot.as_quat(True)
 
         hmd_pose = self.POSE_t.pack(
             lx, ly, lz,
@@ -173,11 +174,12 @@ class SteamVRDeviceManager:
         ly = frame["arm_r"]["location"]["y"] * scale
         lz = frame["arm_r"]["location"]["z"] * scale
 
-        rx = frame["arm_r"]["rotation"]["x"]
-        ry = frame["arm_r"]["rotation"]["y"]
-        rz = frame["arm_r"]["rotation"]["z"]
+        rx = frame["arm_r"]["rotation"]["x"] * rot_scale
+        ry = frame["arm_r"]["rotation"]["y"] * rot_scale
+        rz = frame["arm_r"]["rotation"]["z"] * rot_scale
 
-        x, y, z, w = self.get_quaternion_from_euler(rx, ry, rz)
+        rot = R.from_euler('xyz', [rx, ry, rz], degrees=True)
+        x, y, z, w = rot.as_quat(True)
 
         packet += self.CONTROLLER_t.pack(
             lx, ly, lz,  # x y z
@@ -191,11 +193,12 @@ class SteamVRDeviceManager:
         ly = frame["arm_l"]["location"]["y"] * scale
         lz = frame["arm_l"]["location"]["z"] * scale
 
-        rx = frame["arm_l"]["rotation"]["x"]
-        ry = frame["arm_l"]["rotation"]["y"]
-        rz = frame["arm_l"]["rotation"]["z"]
+        rx = frame["arm_l"]["rotation"]["x"] * rot_scale
+        ry = frame["arm_l"]["rotation"]["y"] * rot_scale
+        rz = frame["arm_l"]["rotation"]["z"] * rot_scale
 
-        x, y, z, w = self.get_quaternion_from_euler(rx, ry, rz)
+        rot = R.from_euler('xyz', [rx, ry, rz], degrees=True)
+        x, y, z, w = rot.as_quat(True)
 
         packet += self.CONTROLLER_t.pack(
             lx, ly, lz,  # x y z
@@ -209,11 +212,12 @@ class SteamVRDeviceManager:
         ly = frame["chest"]["location"]["y"] * scale
         lz = frame["chest"]["location"]["z"] * scale
 
-        rx = frame["chest"]["rotation"]["x"]
-        ry = frame["chest"]["rotation"]["y"]
-        rz = frame["chest"]["rotation"]["z"]
+        rx = frame["chest"]["rotation"]["x"] * rot_scale
+        ry = frame["chest"]["rotation"]["y"] * rot_scale
+        rz = frame["chest"]["rotation"]["z"] * rot_scale
 
-        x, y, z, w = self.get_quaternion_from_euler(rx, ry, rz)
+        rot = R.from_euler('xyz', [rx, ry, rz], degrees=True)
+        x, y, z, w = rot.as_quat(True)
 
         packet += self.POSE_t.pack(
             lx, ly, lz,
@@ -226,11 +230,12 @@ class SteamVRDeviceManager:
         ly = frame["hip"]["location"]["y"] * scale
         lz = frame["hip"]["location"]["z"] * scale
 
-        rx = frame["hip"]["rotation"]["x"]
-        ry = frame["hip"]["rotation"]["y"]
-        rz = frame["hip"]["rotation"]["z"]
+        rx = frame["hip"]["rotation"]["x"] * rot_scale
+        ry = frame["hip"]["rotation"]["y"] * rot_scale
+        rz = frame["hip"]["rotation"]["z"] * rot_scale
 
-        x, y, z, w = self.get_quaternion_from_euler(rx, ry, rz)
+        rot = R.from_euler('xyz', [rx, ry, rz], degrees=True)
+        x, y, z, w = rot.as_quat(True)
 
         packet += self.POSE_t.pack(
             lx, ly, lz,
@@ -243,11 +248,12 @@ class SteamVRDeviceManager:
         ly = frame["leg_l"]["location"]["y"] * scale
         lz = frame["leg_l"]["location"]["z"] * scale
 
-        rx = frame["leg_l"]["rotation"]["x"]
-        ry = frame["leg_l"]["rotation"]["y"]
-        rz = frame["leg_l"]["rotation"]["z"]
+        rx = frame["leg_l"]["rotation"]["x"] * rot_scale
+        ry = frame["leg_l"]["rotation"]["y"] * rot_scale
+        rz = frame["leg_l"]["rotation"]["z"] * rot_scale
 
-        x, y, z, w = self.get_quaternion_from_euler(rx, ry, rz)
+        rot = R.from_euler('xyz', [rx, ry, rz], degrees=True)
+        x, y, z, w = rot.as_quat(True)
 
         packet += self.POSE_t.pack(
             lx, ly, lz,
@@ -260,11 +266,12 @@ class SteamVRDeviceManager:
         ly = frame["leg_r"]["location"]["y"] * scale
         lz = frame["leg_r"]["location"]["z"] * scale
 
-        rx = frame["leg_r"]["rotation"]["x"]
-        ry = frame["leg_r"]["rotation"]["y"]
-        rz = frame["leg_r"]["rotation"]["z"]
+        rx = frame["leg_r"]["rotation"]["x"] * rot_scale
+        ry = frame["leg_r"]["rotation"]["y"] * rot_scale
+        rz = frame["leg_r"]["rotation"]["z"] * rot_scale
 
-        x, y, z, w = self.get_quaternion_from_euler(rx, ry, rz)
+        rot = R.from_euler('xyz', [rx, ry, rz], degrees=True)
+        x, y, z, w = rot.as_quat(True)
 
         packet += self.POSE_t.pack(
             lx, ly, lz,
@@ -277,11 +284,12 @@ class SteamVRDeviceManager:
         ly = frame["foot_l"]["location"]["y"] * scale
         lz = frame["foot_l"]["location"]["z"] * scale
 
-        rx = frame["foot_l"]["rotation"]["x"]
-        ry = frame["foot_l"]["rotation"]["y"]
-        rz = frame["foot_l"]["rotation"]["z"]
+        rx = frame["foot_l"]["rotation"]["x"] * rot_scale
+        ry = frame["foot_l"]["rotation"]["y"] * rot_scale
+        rz = frame["foot_l"]["rotation"]["z"] * rot_scale
 
-        x, y, z, w = self.get_quaternion_from_euler(rx, ry, rz)
+        rot = R.from_euler('xyz', [rx, ry, rz], degrees=True)
+        x, y, z, w = rot.as_quat(True)
 
         packet += self.POSE_t.pack(
             lx, ly, lz,
@@ -294,11 +302,12 @@ class SteamVRDeviceManager:
         ly = frame["foot_r"]["location"]["y"] * scale
         lz = frame["foot_r"]["location"]["z"] * scale
 
-        rx = frame["foot_r"]["rotation"]["x"]
-        ry = frame["foot_r"]["rotation"]["y"]
-        rz = frame["foot_r"]["rotation"]["z"]
+        rx = frame["foot_r"]["rotation"]["x"] * rot_scale
+        ry = frame["foot_r"]["rotation"]["y"] * rot_scale
+        rz = frame["foot_r"]["rotation"]["z"] * rot_scale
 
-        x, y, z, w = self.get_quaternion_from_euler(rx, ry, rz)
+        rot = R.from_euler('xyz', [rx, ry, rz], degrees=True)
+        x, y, z, w = rot.as_quat(True)
 
         packet += self.POSE_t.pack(
             lx, ly, lz,
