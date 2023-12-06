@@ -226,21 +226,6 @@ class MotionManager:
             head_top = "25"
             neck = "24"
 
-            # head
-            y = _get_np_loc(head_top) - _get_np_loc(neck)
-            w = _get_np_loc(neck) - _get_np_loc(head_top)
-            z = np.cross(w, y)
-            if np.sqrt(sum(z ** 2)) < 1e-6:
-                w = _get_np_loc(chest_left) - _get_np_loc(neck)
-                z = np.cross(w, y)
-            x = np.cross(y, z)
-
-            x = x / np.sqrt(sum(x ** 2))
-            y = y / np.sqrt(sum(y ** 2))
-            z = z / np.sqrt(sum(z ** 2))
-
-            head_rot = np.vstack((x, y, z)).T
-
             # hip
             x = _get_np_loc(hip_right) - _get_np_loc(hip_left)
             w = _get_np_loc(hip_up) - _get_np_loc(hip_left)
@@ -328,7 +313,6 @@ class MotionManager:
             # Correct and store
             rot_chest = R.from_matrix(chest_rot).as_euler("xyz", degrees=True)
             rot_hip = R.from_matrix(hip_rot).as_euler("xyz", degrees=True)
-            rot_head = R.from_matrix(arm_l_rot).as_euler("xyz", degrees=True)
             rot_leg_r = R.from_matrix(leg_r_rot).as_euler("xyz", degrees=True)
             rot_leg_l = R.from_matrix(leg_l_rot).as_euler("xyz", degrees=True)
             rot_arm_r = R.from_matrix(arm_r_rot).as_euler("xyz", degrees=True)
@@ -354,7 +338,6 @@ class MotionManager:
 
             rxc, ryc, rzc = list(rot_chest)
             rxh, ryh, rzh = list(rot_hip)
-            _, _, rzhh = list(rot_head)
             rxkl, rykl, rzkl = list(rot_leg_l)
             rxkr, rykr, rzkr = list(rot_leg_r)
             rxal, ryal, rzal = list(rot_leg_l)
@@ -362,7 +345,7 @@ class MotionManager:
 
             marker_dict = {
                 "head": {"location": hh,
-                         "rotation": {"x": -rxc, "y": ryc, "z": rzhh + 30}, "qrotation": qrot_head},
+                         "rotation": {"x": -rxc, "y": ryc, "z": rzc + 30}, "qrotation": qrot_head},
                 "chest": {"location": c,
                           "rotation": {"x": -rxc - 90, "y": ryc, "z": rzc}, "qrotation": qrot_chest},
                 "hip": {"location": h,
