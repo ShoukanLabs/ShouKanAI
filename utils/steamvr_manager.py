@@ -49,7 +49,15 @@ def force_tracker_cam(set_state=False,
             json.dump(data, jsonFile)
 
     if set_state:
-        data["trackers"] = {"/devices/hobovr/t0": "TrackerRole_Camera"}
+        data["trackers"] = {
+            "/devices/hobovr/t0": "TrackerRole_Camera",
+            "/devices/hobovr/t1": "TrackerRole_Chest",
+            "/devices/hobovr/t2": "TrackerRole_Waist",
+            "/devices/hobovr/t3": "TrackerRole_LeftKnee",
+            "/devices/hobovr/t4": "TrackerRole_RightKnee",
+            "/devices/hobovr/t5": "TrackerRole_LeftFoot",
+            "/devices/hobovr/t6": "TrackerRole_RightFoot"
+        }
         data["TrackingOverrides"] = {"/devices/hobovr/t0": "/user/head"}
     else:
         data["trackers"] = {}
