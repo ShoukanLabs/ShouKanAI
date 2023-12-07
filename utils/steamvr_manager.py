@@ -351,6 +351,174 @@ class SteamVRDeviceManager:
 
 
 class VRChatTrackingManager(SteamVRDeviceManager):
+    def __init__(self):
+        super().__init__()
+
+        self.t_pose = {
+                "head": {
+                    "location": {
+                        "x": 0.01643186155706644,
+                        "y": 1.5838544368743896,
+                        "z": 0.006781646981835365
+                    },
+                    "rotation": {
+                        "x": -4.45107150420602,
+                        "y": 0.3023844874613708,
+                        "z": 177.82366261427208
+                    },
+                    "qrotation": [
+                        -0.6543640913952851,
+                        0.4289871317756008,
+                        0.443472951881254,
+                        0.4371606313623097
+                    ]
+                },
+                "chest": {
+                    "location": {
+                        "x": 0.013884163869079202,
+                        "y": 1.4058090448379517,
+                        "z": -0.03805019520223141
+                    },
+                    "rotation": {
+                        "x": -94.45107150420603,
+                        "y": 0.3023844874613708,
+                        "z": 177.82366261427208
+                    },
+                    "qrotation": [
+                        -0.00189885605711946,
+                        0.038876096759521514,
+                        0.9990600749495566,
+                        0.01907904840932058
+                    ]
+                },
+                "hip": {
+                    "location": {
+                        "x": 0.012950003147125244,
+                        "y": 0.9718396663665771,
+                        "z": -0.021865202113986015
+                    },
+                    "rotation": {
+                        "x": 262.78708513070364,
+                        "y": -0.9360177182795297,
+                        "z": -177.6372131709351
+                    },
+                    "qrotation": [
+                        0.02006253156808301,
+                        -0.9977848043598498,
+                        -0.06271945458961378,
+                        0.009447170562506654
+                    ]
+                },
+                "leg_r": {
+                    "location": {
+                        "x": 0.1174139603972435,
+                        "y": 0.49832937121391296,
+                        "z": -0.06753223203122616
+                    },
+                    "rotation": {
+                        "x": 76.25493240810223,
+                        "y": -30.136775408717718,
+                        "z": 164.26376512053974
+                    },
+                    "qrotation": [
+                        0.03097711151505632,
+                        0.5572958247142278,
+                        0.046517383487075334,
+                        0.8284309961317169
+                    ]
+                },
+                "leg_l": {
+                    "location": {
+                        "x": -0.09790284931659698,
+                        "y": 0.4971465468406677,
+                        "z": -0.062113529071211815
+                    },
+                    "rotation": {
+                        "x": -74.69178821006828,
+                        "y": -23.00359695183448,
+                        "z": 16.593248146304393
+                    },
+                    "qrotation": [
+                        0.058637684223251635,
+                        0.8604682672093071,
+                        0.034910138807235716,
+                        0.5049131265110922
+                    ]
+                },
+                "foot_r": {
+                    "location": {
+                        "x": 0.15509212017059326,
+                        "y": 0.017195334658026695,
+                        "z": -0.0009366478770971298
+                    },
+                    "rotation": {
+                        "x": 15.308211789931716,
+                        "y": 66.99640304816552,
+                        "z": 16.593248146304393
+                    },
+                    "qrotation": [
+                        0.03097711151505632,
+                        0.5572958247142278,
+                        0.046517383487075334,
+                        0.8284309961317169
+                    ]
+                },
+                "foot_l": {
+                    "location": {
+                        "x": -0.13045676052570343,
+                        "y": 0.012697434984147549,
+                        "z": 0.01855609379708767
+                    },
+                    "rotation": {
+                        "x": 166.25493240810223,
+                        "y": 59.86322459128228,
+                        "z": 164.26376512053974
+                    },
+                    "qrotation": [
+                        0.058637684223251635,
+                        0.8604682672093071,
+                        0.034910138807235716,
+                        0.5049131265110922
+                    ]
+                },
+                "arm_r": {
+                    "location": {
+                        "x": 0.7127973437309265,
+                        "y": 1.5472499132156372,
+                        "z": -0.02000478468835354
+                    },
+                    "rotation": {
+                        "x": 166.25493240810223,
+                        "y": -0.13677540871771754,
+                        "z": 164.26376512053974
+                    },
+                    "qrotation": [
+                        0.41156772270990566,
+                        0.4529153315941942,
+                        -0.6842346362919245,
+                        0.39661401201768065
+                    ]
+                },
+                "arm_l": {
+                    "location": {
+                        "x": -0.6772607564926147,
+                        "y": 1.5645933151245117,
+                        "z": 0.027033517137169838
+                    },
+                    "rotation": {
+                        "x": 15.308211789931716,
+                        "y": 176.99640304816552,
+                        "z": 16.593248146304393
+                    },
+                    "qrotation": [
+                        -0.6543640913952851,
+                        0.4289871317756008,
+                        0.443472951881254,
+                        0.4371606313623097
+                    ]
+                }
+            }
+
     @staticmethod
     def launch_steamvr():
         # launches vrchat instead, we want to keep most of the
@@ -358,8 +526,8 @@ class VRChatTrackingManager(SteamVRDeviceManager):
         subprocess.run("start steam://run/438100", shell=True)
 
     def begin_calibration(self, calibration_path):
-        with open('user.json', encoding="utf8") as calibration_opener:
-            calibration_opener = calibration_opener.read()
+        with open(calibration_path, encoding="utf8") as calibration_opener:
+            calibration_opener = json.load(calibration_opener)
 
         for idx, frame in enumerate(calibration_opener):
             velocity = idx
@@ -391,7 +559,12 @@ class VRChatTrackingManager(SteamVRDeviceManager):
                 else:
                     return 0
 
-            if frame["arm_r"]["click"]["arm"] == "right":
+            if frame["click"]["arm"] == "right":
+                if idx == 1:
+                    activate_menu = 1
+                else:
+                    activate_menu = 0
+
                 lx = frame["arm_r"]["location"]["x"]
                 ly = frame["arm_r"]["location"]["y"]
                 lz = frame["arm_r"]["location"]["z"]
@@ -408,7 +581,7 @@ class VRChatTrackingManager(SteamVRDeviceManager):
                     x, y, z, w,  # orientation quaternion
                     float(velocity < 10), 0, 0,  # velocity
                     0, 0, 0,  # angular velocity
-                    0, 0, 0, 0, 0, 0, 0, 0, _get_button(frame["arm_r"]["click"]["click"])  # controller inputs
+                    0, 0, activate_menu, 0, 0, 0, 0, 0, _get_button(frame["click"]["click"])
                 )
 
                 lx = frame["arm_l"]["location"]["x"]
@@ -431,6 +604,11 @@ class VRChatTrackingManager(SteamVRDeviceManager):
                 )
 
             else:
+                if idx == 1:
+                    activate_menu = 1
+                else:
+                    activate_menu = 0
+
                 lx = frame["arm_r"]["location"]["x"]
                 ly = frame["arm_r"]["location"]["y"]
                 lz = frame["arm_r"]["location"]["z"]
@@ -447,7 +625,7 @@ class VRChatTrackingManager(SteamVRDeviceManager):
                     x, y, z, w,  # orientation quaternion
                     float(velocity < 10), 0, 0,  # velocity
                     0, 0, 0,  # angular velocity
-                    0, 0, 0, 0, 0, 0, 0, 0, 0  # controller inputs
+                    0, 0, activate_menu, 0, 0, 0, 0, 0, 0  # controller inputs
                 )
 
                 lx = frame["arm_l"]["location"]["x"]
@@ -466,7 +644,7 @@ class VRChatTrackingManager(SteamVRDeviceManager):
                     x, y, z, w,  # orientation quaternion
                     float(velocity < 10), 0, 0,  # velocity
                     0, 0, 0,  # angular velocity
-                    0, 0, 0, 0, 0, 0, 0, 0, _get_button(frame["arm_r"]["click"]["click"])  # controller inputs
+                    0, 0, 0, 0, 0, 0, 0, 0, _get_button(frame["click"]["click"])  # controller inputs
                 )
 
 
@@ -515,8 +693,12 @@ class VRChatTrackingManager(SteamVRDeviceManager):
             self.tracking_socket.sendall(hmd_pose + packet + self.SEND_TERMINATOR)
             time.sleep(1/25)  # 25 fps for animation
 
-    # the rest can be handled by the default self.update_pose_full class
-
+        # the rest can be handled by the default self.update_pose_full class
+        for i in range(100):
+            self.update_pose_full(self.t_pose, velocity=i)
+            time.sleep(1/25)
+        self.update_pose_full(self.t_pose, velocity=101, click_trigger=True)
+        print("[CALIBRATED] Pose should now be calibrated for use!")
 
 if __name__ == "__main__":
     force_tracker_cam(False)
