@@ -350,7 +350,7 @@ class SteamVRDeviceManager:
         return [qx, qy, qz, qw]
 
 
-class VRChatManager(SteamVRDeviceManager):
+class VRChatTrackingManager(SteamVRDeviceManager):
     @staticmethod
     def launch_steamvr():
         # launches vrchat instead, we want to keep most of the
