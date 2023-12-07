@@ -68,11 +68,6 @@ def force_tracker_cam(set_state=False,
 
     force_driver(set_state, settings_path, driver_settings_path)
 
-
-def launch_steamvr():
-    subprocess.run("start steam://run/250820", shell=True)
-
-
 class SteamVRDeviceManager:
     def __init__(self):
         # API Structs
@@ -100,9 +95,9 @@ class SteamVRDeviceManager:
         self.serversocket.bind(('', 6969))
         self.serversocket.listen(2)  # driver connects with 2 sockets
 
-        print("[DRIVER] Waiting for driver to connect...")
+        self.launch_steamvr()
 
-        launch_steamvr()
+        print("[DRIVER] Waiting for driver to connect...")
 
         self.client_a = self.serversocket.accept()
         self.client_b = self.serversocket.accept()
@@ -132,6 +127,10 @@ class SteamVRDeviceManager:
             self.client_b[0].close()
 
             self.serversocket.close()
+
+    @staticmethod
+    def launch_steamvr():
+        subprocess.run("start steam://run/250820", shell=True)
 
     def create_trackers(self):
         self.device_list = self.MANAGER_UDU_MSG_t.pack(
@@ -349,6 +348,174 @@ class SteamVRDeviceManager:
             yaw / 2)
 
         return [qx, qy, qz, qw]
+
+
+class VRChatManager(SteamVRDeviceManager):
+    @staticmethod
+    def launch_steamvr():
+        # launches vrchat instead, we want to keep most of the
+        # functionality so instead of creating a new class we simply override this function
+        subprocess.run("start steam://run/438100", shell=True)
+
+    def begin_calibration(self, calibration_path):
+        with open('user.json', encoding="utf8") as calibration_opener:
+            calibration_opener = calibration_opener.read()
+
+        for idx, frame in enumerate(calibration_opener):
+            velocity = idx
+            frame = frame[0]
+
+            packet = b''
+
+            lx = frame["head"]["location"]["x"]
+            ly = frame["head"]["location"]["y"]
+            lz = frame["head"]["location"]["z"]
+
+            rx = frame["head"]["rotation"]["x"]
+            ry = 1 - frame["head"]["rotation"]["y"]
+            rz = frame["head"]["rotation"]["z"]
+
+            rot = R.from_euler('zyx', [rx, ry, rz], degrees=True)
+            x, y, z, w = rot.as_quat(False)
+
+            hmd_pose = self.POSE_t.pack(
+                lx, ly, lz,
+                x, y, z, w,
+                float(velocity < 10), 0, 0,
+                0, 0, 0
+            )
+
+            def _get_button(button):
+                if button:
+                    return 1
+                else:
+                    return 0
+
+            if frame["arm_r"]["click"]["arm"] == "right":
+                lx = frame["arm_r"]["location"]["x"]
+                ly = frame["arm_r"]["location"]["y"]
+                lz = frame["arm_r"]["location"]["z"]
+
+                rx = frame["arm_r"]["rotation"]["x"]
+                ry = 1 - frame["arm_r"]["rotation"]["y"]
+                rz = frame["arm_r"]["rotation"]["z"]
+
+                rot = R.from_euler('zyx', [rx, ry, rz], degrees=True)
+                x, y, z, w = rot.as_quat(False)
+
+                packet += self.CONTROLLER_t.pack(
+                    lx, ly, lz,  # x y z
+                    x, y, z, w,  # orientation quaternion
+                    float(velocity < 10), 0, 0,  # velocity
+                    0, 0, 0,  # angular velocity
+                    0, 0, 0, 0, 0, 0, 0, 0, _get_button(frame["arm_r"]["click"]["click"])  # controller inputs
+                )
+
+                lx = frame["arm_l"]["location"]["x"]
+                ly = frame["arm_l"]["location"]["y"]
+                lz = frame["arm_l"]["location"]["z"]
+
+                rx = frame["arm_l"]["rotation"]["x"]
+                ry = 1 - frame["arm_l"]["rotation"]["y"]
+                rz = frame["arm_l"]["rotation"]["z"]
+
+                rot = R.from_euler('zyx', [rx, ry, rz], degrees=True)
+                x, y, z, w = rot.as_quat(False)
+
+                packet += self.CONTROLLER_t.pack(
+                    lx, ly, lz,  # x y z
+                    x, y, z, w,  # orientation quaternion
+                    float(velocity < 10), 0, 0,  # velocity
+                    0, 0, 0,  # angular velocity
+                    0, 0, 0, 0, 0, 0, 0, 0,0  # controller inputs
+                )
+
+            else:
+                lx = frame["arm_r"]["location"]["x"]
+                ly = frame["arm_r"]["location"]["y"]
+                lz = frame["arm_r"]["location"]["z"]
+
+                rx = frame["arm_r"]["rotation"]["x"]
+                ry = 1 - frame["arm_r"]["rotation"]["y"]
+                rz = frame["arm_r"]["rotation"]["z"]
+
+                rot = R.from_euler('zyx', [rx, ry, rz], degrees=True)
+                x, y, z, w = rot.as_quat(False)
+
+                packet += self.CONTROLLER_t.pack(
+                    lx, ly, lz,  # x y z
+                    x, y, z, w,  # orientation quaternion
+                    float(velocity < 10), 0, 0,  # velocity
+                    0, 0, 0,  # angular velocity
+                    0, 0, 0, 0, 0, 0, 0, 0, 0  # controller inputs
+                )
+
+                lx = frame["arm_l"]["location"]["x"]
+                ly = frame["arm_l"]["location"]["y"]
+                lz = frame["arm_l"]["location"]["z"]
+
+                rx = frame["arm_l"]["rotation"]["x"]
+                ry = 1 - frame["arm_l"]["rotation"]["y"]
+                rz = frame["arm_l"]["rotation"]["z"]
+
+                rot = R.from_euler('zyx', [rx, ry, rz], degrees=True)
+                x, y, z, w = rot.as_quat(False)
+
+                packet += self.CONTROLLER_t.pack(
+                    lx, ly, lz,  # x y z
+                    x, y, z, w,  # orientation quaternion
+                    float(velocity < 10), 0, 0,  # velocity
+                    0, 0, 0,  # angular velocity
+                    0, 0, 0, 0, 0, 0, 0, 0, _get_button(frame["arm_r"]["click"]["click"])  # controller inputs
+                )
+
+
+            packet += self.POSE_t.pack(
+                0, 0, 0,
+                0, 0, 0, 0,
+                float(velocity < 10), 0, 0,
+                0, 0, 0
+            )
+
+            packet += self.POSE_t.pack(
+                0, 0, 0,
+                0, 0, 0, 0,
+                float(velocity < 10), 0, 0,
+                0, 0, 0
+            )
+
+            packet += self.POSE_t.pack(
+                0, 0, 0,
+                0, 0, 0, 0,
+                float(velocity < 10), 0, 0,
+                0, 0, 0
+            )
+
+            packet += self.POSE_t.pack(
+                0, 0, 0,
+                0, 0, 0, 0,
+                float(velocity < 10), 0, 0,
+                0, 0, 0
+            )
+
+            packet += self.POSE_t.pack(
+                0, 0, 0,
+                0, 0, 0, 0,
+                float(velocity < 10), 0, 0,
+                0, 0, 0
+            )
+
+            packet += self.POSE_t.pack(
+                0, 0, 0,
+                0, 0, 0, 0,
+                float(velocity < 10), 0, 0,
+                0, 0, 0
+            )
+
+            self.tracking_socket.sendall(hmd_pose + packet + self.SEND_TERMINATOR)
+            time.sleep(1/25)  # 25 fps for animation
+
+    # the rest can be handled by the default self.update_pose_full class
 
 
 if __name__ == "__main__":
